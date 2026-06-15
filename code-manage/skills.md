@@ -258,13 +258,31 @@ curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
 curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
   "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/changeRequests?state=opened&perPage=30"
 
-# 按仓库过滤
+# 按仓库过滤（多仓库用逗号分隔）
 curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/changeRequests?projectId={repoId}&state=opened"
-```
-> **注意**: MR 列表在**组织级别**（`/organizations/{orgId}/changeRequests`），通过 `projectId` 查询参数按仓库过滤，**不是**在仓库路径下。
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/changeRequests?projectIds={repoId}&state=opened"
 
-`state` 可选：`opened`, `merged`, `closed`
+# 完整参数示例
+curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/changeRequests?projectIds={repoId1},{repoId2}&state=opened&page=1&perPage=20&orderBy=updated_at&sort=desc&search=关键词&authorIds=userId1&reviewerIds=userId2&createdAfter=2024-01-01T00:00:00Z&createdBefore=2024-12-31T23:59:59Z"
+```
+> **注意**: MR 列表在**组织级别**（`/organizations/{orgId}/changeRequests`），通过 `projectIds`（复数）查询参数按仓库过滤，**不是**在仓库路径下。
+
+**查询参数**：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `state` | string | 否 | `opened`, `merged`, `closed`，不传返回全部 |
+| `projectIds` | string | 否 | 仓库 ID 列表，逗号分隔 |
+| `page` | integer | 否 | 页码，默认 1 |
+| `perPage` | integer | 否 | 每页大小，默认 20 |
+| `search` | string | 否 | 标题关键字搜索 |
+| `authorIds` | string | 否 | 创建者用户 ID，逗号分隔 |
+| `reviewerIds` | string | 否 | 评审人用户 ID，逗号分隔 |
+| `orderBy` | string | 否 | 排序字段：`created_at` / `updated_at`，默认 `updated_at` |
+| `sort` | string | 否 | 排序方式：`asc` / `desc`，默认 `desc` |
+| `createdAfter` | string | 否 | 起始创建时间，ISO 8601 格式 |
+| `createdBefore` | string | 否 | 截止创建时间，ISO 8601 格式 |
 
 响应数组字段：
 - `localId`: MR 编号（整数，用于单 MR 操作）
@@ -295,12 +313,15 @@ curl -s -X POST \
   -d '{
     "sourceBranch": "feature/my-feature",
     "targetBranch": "master",
+    "sourceProjectId": 2813489,
+    "targetProjectId": 2813489,
     "title": "feat: 功能说明",
     "description": "详细描述"
   }' \
   "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests"
 ```
-可选字段：`reviewerIds` (评审人用户 ID 数组)
+> **必填**: `sourceBranch`, `targetBranch`, `sourceProjectId`, `targetProjectId`, `title`
+> 可选字段：`reviewerUserIds` (评审人用户 ID 数组), `triggerAIReviewRun` (是否触发 AI 评审), `workItemIds` (关联工作项 ID，逗号分隔字符串)
 
 ### 更新 MR 基本信息
 ```bash
@@ -313,12 +334,11 @@ curl -s -X PUT \
 
 ### 关闭 MR
 ```bash
-curl -s -X PUT \
+curl -s -X POST \
   -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"state":"closed"}' \
-  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}"
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}/close"
 ```
+响应：`{"result": true}`
 
 ### 重新打开 MR
 ```bash
@@ -326,15 +346,53 @@ curl -s -X POST \
   -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
   "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}/reopen"
 ```
+> 注意：若源分支相对目标分支无新改动，重新打开会失败。
 
-### MR 评论
-
+### 评审 MR
 ```bash
-# 全局评论
 curl -s -X POST \
   -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"commentType":"GLOBAL_COMMENT","content":"整体看起来不错"}' \
+  -d '{"reviewOpinion":"PASS","reviewComment":"代码评审通过"}' \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}/review"
+```
+Body 参数：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `reviewOpinion` | string | 否 | `PASS` - 通过；`NOT_PASS` - 不通过 |
+| `reviewComment` | string | 否 | 评审评论内容 |
+| `submitDraftCommentIds` | array[string] | 否 | 提交的草稿评论 ID 列表 |
+
+### 合并 MR
+```bash
+curl -s -X POST \
+  -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"mergeType":"no-fast-forward","mergeMessage":"合并信息","removeSourceBranch":false}' \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}/merge"
+```
+Body 参数：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `mergeType` | string | **是** | `ff-only` / `no-fast-forward` / `squash` / `rebase` |
+| `mergeMessage` | string | 否 | 合并提交信息 |
+| `removeSourceBranch` | boolean | 否 | 合并后是否删除源分支 |
+
+### 创建 MR 评论
+
+```bash
+# 全局评论（patchset_biz_id 可选）
+curl -s -X POST \
+  -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "comment_type": "GLOBAL_COMMENT",
+    "content": "整体看起来不错",
+    "draft": false,
+    "resolved": false
+  }' \
   "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}/comments"
 
 # 行内评论
@@ -342,19 +400,60 @@ curl -s -X POST \
   -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "commentType": "INLINE_COMMENT",
+    "comment_type": "INLINE_COMMENT",
     "content": "这里建议优化",
-    "filePath": "src/utils.ts",
-    "lineNumber": 42
+    "draft": false,
+    "resolved": false,
+    "file_path": "src/utils.ts",
+    "line_number": 42
+  }' \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}/comments"
+
+# 回复评论
+curl -s -X POST \
+  -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "comment_type": "GLOBAL_COMMENT",
+    "content": "回复评论内容",
+    "draft": false,
+    "resolved": false,
+    "parent_comment_biz_id": "父评论bizId"
   }' \
   "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}/comments"
 ```
 
+Body 参数：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `comment_type` | string | **是** | `GLOBAL_COMMENT` 或 `INLINE_COMMENT` |
+| `content` | string | **是** | 评论内容（1-65535 字符） |
+| `draft` | boolean | **是** | 是否草稿评论 |
+| `resolved` | boolean | **是** | 是否标记已解决 |
+| `file_path` | string | 否 | 文件路径（仅行内评论） |
+| `line_number` | integer | 否 | 行号（仅行内评论） |
+| `patchset_biz_id` | string | 否 | 关联版本 ID（官方标注必填，实测全局评论可不传） |
+| `from_patchset_biz_id` | string | 否 | 起始版本 ID（INLINE_COMMENT 时与 `to_patchset_biz_id` 二选一） |
+| `to_patchset_biz_id` | string | 否 | 目标版本 ID（INLINE_COMMENT 时与 `from_patchset_biz_id` 二选一） |
+| `parent_comment_biz_id` | string | 否 | 父评论 bizId（回复评论时使用） |
+
+> **响应字段使用 snake_case**：`comment_biz_id`, `comment_type`, `comment_time`, `is_deleted`
+
+### 删除 MR 评论
+```bash
+curl -s -X DELETE \
+  -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}/comments/{commentBizId}"
+```
+> `commentBizId`：评论的业务 ID，从评论创建响应或列表中获取。
+
 ### 查询 MR 变更文件树
 ```bash
 curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}/diffs/changeTree"
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}/diffs/changeTree?fromPatchSetId={fromPatchSetId}&toPatchSetId={toPatchSetId}"
 ```
+> `fromPatchSetId` 和 `toPatchSetId` 为必填查询参数，可从 MR 详情中的 patchset 信息获取。
 
 ### 管理 MR 评审人
 ```bash
@@ -439,6 +538,8 @@ curl -s -X POST \
   -d '{
     "sourceBranch": "feature/my-feature",
     "targetBranch": "master",
+    "sourceProjectId": '"$REPO_ID"',
+    "targetProjectId": '"$REPO_ID"',
     "title": "feat: 新功能",
     "description": "## 变更说明\n- 添加了 XXX"
   }' \
@@ -450,7 +551,7 @@ curl -s -X POST \
 ```bash
 # 列出某仓库所有 open MR
 curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/$ORG_ID/changeRequests?projectId=$REPO_ID&state=opened" \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/codeup/organizations/$ORG_ID/changeRequests?projectIds=$REPO_ID&state=opened" \
   | jq '.[] | {localId, title, sourceBranch, targetBranch, author: .author.name, detailUrl}'
 
 # 查看 MR 变更的文件
@@ -526,9 +627,11 @@ echo "$BODY" | jq -e 'has("errorCode")' > /dev/null 2>&1 && {
 2. **组织列表**: 路径是 `/oapi/v1/platform/organizations`，**不是** `/oapi/v1/organizations`。
 3. **文件读取**: 路径是 `/files/{path}?ref=branch`，**不需要** `/blobs` 后缀。
 4. **提交列表**: 参数名是 `refName`，**不是** `ref`。
-5. **MR 列表**: 在组织层级 `/organizations/{orgId}/changeRequests`，通过 `projectId` 查询参数按仓库过滤。
-6. **MR 单条**: 在仓库层级 `/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}`。
-7. **localId vs mrBizId**: MR 标识用 `localId`（数字），不用 `mrBizId`（UUID）。
-8. **文件内容**: 创建/更新时 `content` 必须是 Base64 编码字符串。
-9. **分支名编码**: URL 路径中的 `/` 编码为 `%2F`，query string 中不需要编码。
-10. **对比 API**: 未验证可用，暂不推荐使用。
+5. **MR 列表**: 在组织层级 `/organizations/{orgId}/changeRequests`，通过 `projectIds`（复数）查询参数按仓库过滤，支持逗号分隔多仓库。
+6. **MR 单条/创建**: 在仓库层级 `/organizations/{orgId}/repositories/{repoId}/changeRequests/{localId}`。
+7. **MR 创建必填**: `sourceBranch`, `targetBranch`, `sourceProjectId`, `targetProjectId`, `title` — 缺少 `sourceProjectId`/`targetProjectId` 会返回 500 无意义错误。
+8. **MR 关闭/评审/合并**: 使用 POST 到 `/close`, `/review`, `/merge` 后缀，非 PUT 修改 state。
+9. **localId vs mrBizId**: MR 标识用 `localId`（数字），不用 `mrBizId`（UUID）。
+10. **文件内容**: 创建/更新时 `content` 必须是 Base64 编码字符串。
+11. **分支名编码**: URL 路径中的 `/` 编码为 `%2F`，query string 中不需要编码。
+12. **评论字段**: 使用 snake_case（`comment_type`, `file_path`, `line_number`），必填 `draft`, `patchset_biz_id`, `resolved`。
