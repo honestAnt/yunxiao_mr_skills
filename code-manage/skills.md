@@ -26,7 +26,9 @@ curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
 | 认证 Header | `x-yunxiao-token: $YUNXIAO_TOKEN` |
 | Content-Type | `application/json`（POST/PUT 时必须） |
 
-> **响应格式**: 接口直接返回 JSON 数组或对象，**不需要**通过 `.data` 字段提取（与部分云效 API 不同）。
+> **响应格式**: Codeup API 直接返回 JSON 数组/对象，**不**通过 `.data` 字段提取（与部分其他云效 API 不同）。Projex 工作项 API 同样直接返回 JSON，但 PUT 更新返回 `HTTP 204`（无响应体）。
+>
+> **API 路径约定**: 云效 oapi 使用 `:action` 冒号语法表示资源操作（如 `POST /workitems:search`），与 RESTful 子路径 `/resource/action` 不同。
 
 **通用 curl 模板**：
 ```bash
@@ -73,7 +75,8 @@ curl -s -X DELETE -H "x-yunxiao-token: $YUNXIAO_TOKEN" "https://openapi-rdc.aliy
 6. [提交操作](#提交操作)
 7. [常见工作流](#常见工作流)
 
-> **工作项管理**: 工作项（需求/任务/缺陷）的搜索、查看和更新操作已独立为 [yunxiao-workitem](./workitem.md) 技能。当用户需要操作工作项时，请参考该文档。
+> **工作项管理（Projex）**: 工作项（需求/任务/缺陷）的搜索、查看和更新操作已独立为 [yunxiao-workitem](./workitem.md) 技能，与 Codeup 共享相同的 Base URL 和 Token 认证。当用户需要操作工作项时，**必须**参考该文档。<br>
+> 工作项 API 使用 `POST /workitems:search`（**冒号**语法，非斜杠 `/search`），PUT 更新返回 `HTTP 204`。
 
 ---
 
@@ -598,27 +601,31 @@ curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
 | HTTP 状态 | errorCode | 含义 | 处理 |
 |-----------|-----------|------|------|
 | 200 | - | 成功 | — |
+| 204 | - | PUT 更新成功（无响应体） | 需 GET 验证更新结果 |
 | 400 | BAD_REQUEST | 参数缺失/错误 | 检查参数名是否正确（如 `refName` vs `ref`） |
 | 401 | Unauthorized | 未认证 | 提示用户检查 `YUNXIAO_TOKEN` |
 | 403 | Forbidden.* | 无权限 | 检查 orgId 是否正确、token 是否有仓库权限 |
 | 404 | NotFound | 路径/资源不存在 | 检查 API 路径格式、repoId/branchName 正确性 |
 
-**通用错误检查模板**：
+**通用错误检查模板**（兼容 204）：
 ```bash
 RESPONSE=$(curl -s -w "\n%{http_code}" -H "x-yunxiao-token: $YUNXIAO_TOKEN" "$URL")
 HTTP_CODE=$(echo "$RESPONSE" | tail -1)
 BODY=$(echo "$RESPONSE" | sed '$d')
 
-if [ "$HTTP_CODE" != "200" ]; then
+# 200 和 204 均为成功
+if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "204" ]; then
   echo "HTTP $HTTP_CODE 错误" >&2
   echo "$BODY" | jq '{errorCode, errorMessage, error: .error, status: .status}' >&2
   exit 1
 fi
-# 检查是否错误码
-echo "$BODY" | jq -e 'has("errorCode")' > /dev/null 2>&1 && {
-  echo "API 错误: $(echo "$BODY" | jq -r '.errorCode + ": " + .errorMessage')" >&2
-  exit 1
-}
+# 仅 200 时检查响应体错误码（204 无响应体）
+if [ "$HTTP_CODE" = "200" ]; then
+  echo "$BODY" | jq -e 'has("errorCode")' > /dev/null 2>&1 && {
+    echo "API 错误: $(echo "$BODY" | jq -r '.errorCode + ": " + .errorMessage')" >&2
+    exit 1
+  }
+fi
 ```
 
 ---
