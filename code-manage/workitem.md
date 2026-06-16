@@ -18,7 +18,7 @@ description: 云效 Projex 工作项管理技能。提供工作项的搜索、�
 
 | 项目 | 值 |
 |------|-----|
-| Base URL | `https://devops.aliyun.com` |
+| Base URL | `https://openapi-rdc.aliyuncs.com` |
 | 认证 Header | `x-yunxiao-token: $YUNXIAO_TOKEN` |
 | Content-Type | `application/json`（POST/PUT 时必须） |
 
@@ -26,14 +26,14 @@ description: 云效 Projex 工作项管理技能。提供工作项的搜索、�
 ```bash
 # GET
 curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  "https://devops.aliyun.com/oapi/v1/projex/..."
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/..."
 
 # PUT（带 JSON body）
 curl -s -X PUT \
   -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"key":"value"}' \
-  "https://devops.aliyun.com/oapi/v1/projex/..."
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/..."
 ```
 
 **错误响应格式**:
@@ -53,7 +53,7 @@ curl -s -X PUT \
 ### 1. 获取组织 ID
 
 操作工作项需要 `organizationId`，可从云效链接获取：
-`https://devops.aliyun.com/organization/{organizationId}`
+`https://openapi-rdc.aliyuncs.com/organization/{organizationId}`
 
 或者通过 API 列出所有组织：
 ```bash
@@ -64,7 +64,7 @@ curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
 ### 2. 获取项目 ID（spaceId）
 
 工作项所属的项目（空间）ID，可从云效项目链接获取：
-`https://devops.aliyun.com/projex/project/{spaceId}`
+`https://openapi-rdc.aliyuncs.com/projex/project/{spaceId}`
 
 或在项目设置 → 基本信息中查看。
 
@@ -91,7 +91,7 @@ curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
 
 ```bash
 curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/{organizationId}/workitems/search?spaceId={spaceId}&category={category}"
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/{organizationId}/workitems/search?spaceId={spaceId}&category={category}"
 ```
 
 ### 请求参数
@@ -231,7 +231,7 @@ curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
 
 ```bash
 curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
 ```
 
 ### 请求参数
@@ -327,7 +327,7 @@ curl -s -X PUT \
     "subject": "更新后的标题",
     "assignedTo": "userId"
   }' \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
 ```
 
 ### 请求参数
@@ -372,7 +372,7 @@ curl -s -X PUT \
     "description": "## 需求描述\n实现用户增删改查功能",
     "formatType": "MARKDOWN"
   }' \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
 ```
 
 **更新状态**：
@@ -381,7 +381,7 @@ curl -s -X PUT \
   -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"status": "100011"}' \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
 ```
 
 **更新负责人和优先级**：
@@ -393,7 +393,7 @@ curl -s -X PUT \
     "assignedTo": "19xx7043xxxxxxx914",
     "priority": "1"
   }' \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
 ```
 
 **更新自定义字段**：
@@ -407,7 +407,7 @@ curl -s -X PUT \
       "custom_field_002": ["选项A", "选项B"]
     }
   }' \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/{organizationId}/workitems/{workItemId}"
 ```
 
 ### 响应示例
@@ -438,7 +438,7 @@ curl -s -X PUT \
 ```bash
 # 前提：已知 ORG_ID 和 SPACE_ID
 curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/$ORG_ID/workitems/search?spaceId=$SPACE_ID&category=Req&assignedTo=self&status=100010" \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/$ORG_ID/workitems/search?spaceId=$SPACE_ID&category=Req&assignedTo=self&status=100010" \
   | jq '.workitems[] | {identifier, subject, status, serialNumber, gmtModified}'
 ```
 
@@ -448,7 +448,7 @@ curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
 # 1. 获取工作项详情
 WORKITEM_ID="e8bxxxxxxxxxxxxxxxx23"
 curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/$ORG_ID/workitems/$WORKITEM_ID" \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/$ORG_ID/workitems/$WORKITEM_ID" \
   | jq '.workitem | {identifier, subject, status, assignedTo, description: .document}'
 
 # 2. 更新工作项状态
@@ -456,7 +456,7 @@ curl -s -X PUT \
   -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"status": "100011"}' \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/$ORG_ID/workitems/$WORKITEM_ID" \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/$ORG_ID/workitems/$WORKITEM_ID" \
   | jq '{success, workitem: {identifier, subject, status}}'
 ```
 
@@ -465,7 +465,7 @@ curl -s -X PUT \
 ```bash
 # 1. 搜索特定条件下的工作项
 WORKITEMS=$(curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/$ORG_ID/workitems/search?spaceId=$SPACE_ID&category=Bug&status=28&perPage=50" \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/$ORG_ID/workitems/search?spaceId=$SPACE_ID&category=Bug&status=28&perPage=50" \
   | jq -r '.workitems[] | .identifier')
 
 # 2. 逐个更新（示例：全部改为处理中状态）
@@ -475,7 +475,7 @@ for id in $WORKITEMS; do
     -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{"status": "100010"}' \
-    "https://devops.aliyun.com/oapi/v1/projex/organizations/$ORG_ID/workitems/$id" \
+    "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/$ORG_ID/workitems/$id" \
     | jq '{success, workitem: {identifier: .workitem.identifier, subject: .workitem.subject, status: .workitem.status}}'
 done
 ```
@@ -487,7 +487,7 @@ done
 SEVEN_DAYS_AGO=$(date -v-7d +%Y-%m-%d 2>/dev/null || date -d '7 days ago' +%Y-%m-%d)
 
 curl -s -H "x-yunxiao-token: $YUNXIAO_TOKEN" \
-  "https://devops.aliyun.com/oapi/v1/projex/organizations/$ORG_ID/workitems/search?spaceId=$SPACE_ID&category=Req&updatedAfter=$SEVEN_DAYS_AGO&orderBy=updated&sort=desc&perPage=20" \
+  "https://openapi-rdc.aliyuncs.com/oapi/v1/projex/organizations/$ORG_ID/workitems/search?spaceId=$SPACE_ID&category=Req&updatedAfter=$SEVEN_DAYS_AGO&orderBy=updated&sort=desc&perPage=20" \
   | jq '.workitems[] | {identifier, subject, status, assignedTo, gmtModified}'
 ```
 
@@ -526,7 +526,7 @@ fi
 
 ## 关键注意事项
 
-1. **Base URL 不同**: Projex 工作项 API 使用 `devops.aliyun.com`，而 Codeup 代码管理 API 使用 `openapi-rdc.aliyuncs.com`，两者**不同**。
+1. **Base URL 不同**: Projex 工作项 API 使用 `openapi-rdc.aliyuncs.com`，而 Codeup 代码管理 API 使用 `openapi-rdc.aliyuncs.com`，两者**不同**。
 
 2. **工作项标识**: 接口使用 `identifier`（UUID，如 `e8bxxxxxxxxxxxxxxxx23`），不是 `serialNumber`（如 `PROJ-1`）。
 
