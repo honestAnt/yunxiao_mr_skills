@@ -73,6 +73,8 @@ curl -s -X DELETE -H "x-yunxiao-token: $YUNXIAO_TOKEN" "https://openapi-rdc.aliy
 6. [提交操作](#提交操作)
 7. [常见工作流](#常见工作流)
 
+> **工作项管理**: 工作项（需求/任务/缺陷）的搜索、查看和更新操作已独立为 [yunxiao-workitem](./workitem.md) 技能。当用户需要操作工作项时，请参考该文档。
+
 ---
 
 ## 快速开始：获取 IDs

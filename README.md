@@ -30,6 +30,17 @@ https://help.aliyun.com/zh/yunxiao/developer-reference/deletechangerequestcommen
 
 
 
+## 搜索工作项
+https://help.aliyun.com/zh/yunxiao/developer-reference/searchworkitems
+
+## 获取工作项详情
+https://help.aliyun.com/zh/yunxiao/developer-reference/getworkitem
+
+## 更新工作项
+https://help.aliyun.com/zh/yunxiao/developer-reference/updateworkitem
+
+---
+
 验证下提交merge request的功能
 creator_guide = repoId: 7010028
 source分支 agent/agent/ee87ab09
